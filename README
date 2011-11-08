@@ -7,7 +7,15 @@ SDB
 ELB
 IAM
 
-To run "aws", all you need is a single file! Download http://github.com/timkay/aws/raw/master/aws, make it executable, create ~/.awssecrets, and you are done.
+To run "aws", all you need is a single file! Download https://raw.github.com/nimboids/aws/master/aws, make it executable, and you are done.
+
+This version has been customised from the original timkay version, so that it supports Eucalyptus (Ubuntu cloud).
+
+Add the following into your ~/.awsrc file:
+--http
+--no_vhost
+
+The script will pick up the correct environment variables (assuming you've run your eucarc file, or equivalent)
 
 For more documentation, see http://timkay.com/aws/
 
