@@ -77,7 +77,7 @@ $iam_version = "2010-05-08";
                                                    ]],
 	["ec2", "cancel-spot-instance-requests cancel csir", CancelSpotInstanceRequests, [
 									   ["", SpotInstanceRequestIdN],
-									   ]],								  
+									   ]],
 	["ec2", "confirm-product-instance", ConfirmProductInstance, [
 								     ["", ProductCode],
 								     ["i", InstanceId],
@@ -94,7 +94,7 @@ $iam_version = "2010-05-08";
 									       ["end", EndTime],
 									       ["instance-type", InstanceType, "m1.small"],
 									       ["description", ProductDescription, "Linux/UNIX"],
-									       ]],									   
+									       ]],
 	["ec2", "create-volume cvol", CreateVolume, [
 						     ["size", Size],
 						     ["zone", AvailabilityZone],
@@ -787,7 +787,7 @@ END {close STDOUT}
 
 
 $s3host ||= $ENV{S3_URL} || "s3.amazonaws.com";
-
+$s3host =~ s/^http:\/\///g;
 
 print STDERR "aws version: v$program_version  (ec2: $ec2_version, sqs: $sqs_version, elb: $elb_version, sdb: $sdb_version, iam: $iam_version)\n" if $v;
 
@@ -820,7 +820,7 @@ if (!-e "$home/.awsrc" || $sanity_check)
 {
     if (!$silent)
     {
-	if ($ENV{AWS_SECRET_ACCESS_KEY} && $ENV{AWS_ACCESS_KEY_ID})
+	if ($ENV{EC2_SECRET_KEY} && $ENV{EC2_ACCESS_KEY})
 	{
 	}
 	elsif (!-e $secrets_file)
@@ -834,7 +834,7 @@ if (!-e "$home/.awsrc" || $sanity_check)
 	elsif ($isUnix)
 	{
 	    my $stat = (stat $secrets_file)[2] & 0777;
-	    
+
 	    if (($stat & 0477) != 0400)
 	    {
 		my @perm = (qw(x r w)) x 4;
@@ -852,13 +852,13 @@ if (!-e "$home/.awsrc" || $sanity_check)
 	warn "sanity-check: This curl (v$curl_version) does not support --retry (>= v7.12.3), so --retry is disabled\n" unless $silent;
     }
 
-    my $aws = qx[curl -q -s $insecureaws --dump-header - $scheme://connection.$s3host/test];
+    my $aws = qx[curl -q -s $insecureaws --dump-header - $scheme://$s3host/test];
     print $aws if $v >= 2;
     my($d, $mon, $y, $h, $m, $s) = $aws =~ /^Date: ..., (..) (...) (....) (..):(..):(..) GMT\r?$/m;
 
     if (!$d)
     {
-	$aws = qx[curl -q -s --insecure --dump-header - $scheme://connection.$s3host/test];
+	$aws = qx[curl -q -s --insecure --dump-header - $scheme://$s3host/test];
 	($d, $mon, $y, $h, $m, $s) = $aws =~ /^Date: ..., (..) (...) (....) (..):(..):(..) GMT\r?$/m;
 	if ($d)
 	{
@@ -866,7 +866,7 @@ if (!-e "$home/.awsrc" || $sanity_check)
 	}
 	else
 	{
-	    $aws = qx[curl -q -s --insecure --dump-header - http://connection.$s3host/test];
+	    $aws = qx[curl -q -s --insecure --dump-header - http://$s3host/test];
 	    ($d, $mon, $y, $h, $m, $s) = $aws =~ /^Date: ..., (..) (...) (....) (..):(..):(..) GMT\r?$/m;
 	    if ($d)
 	    {
@@ -936,7 +936,7 @@ if ($sign)
 if ($install)
 {
     die "Usage: .../aws --install\n" if $install && @argv;
-    
+
     if (-w "/usr/bin")
     {
 	chomp(my $dir = qx[pwd]);
@@ -2258,7 +2258,7 @@ sub load_file_silent
     <$io>;
 }
 
-sub guess_is_unix 
+sub guess_is_unix
 {
     return 1 if $ENV{OS} =~ /windows/i && $ENV{OSTYPE} =~ /cygwin/i;
     return 1 if $ENV{OS} !~ /windows/i;
@@ -2276,7 +2276,7 @@ sub sign
 {
     my($data) = @_;
 
-    my($awskey, $secret, $signurl) = @ENV{qw(AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SIGN_URL)};
+    my($awskey, $secret, $signurl) = @ENV{qw(EC2_ACCESS_KEY EC2_SECRET_KEY AWS_SIGN_URL)};
 
     unless ($awskey || $secret || $signurl)
     {
@@ -2516,8 +2516,8 @@ sub sha1_sha1
     #constants [4.2.1]
     my @K = (0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6);
 
-    # PREPROCESSING 
- 
+    # PREPROCESSING
+
     $msg .= pack(C, 0x80); # add trailing '1' bit to string [5.1.1]
 
     # convert string msg into 512-bit/16-integer blocks arrays of ints [5.2.1]
@@ -2679,3 +2679,4 @@ sub decode_base64 ($)
 #
 # end of encode_base64()
 #
+
